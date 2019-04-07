@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <style>
+body {
+  background-color: #666;
+}
+.bar {
+  fill: #1f78b4;
+}
+
+.bar:hover {
+  fill: #a6cee3;
+}
+
+.bar.positive {
+  fill: #33a02c;
+}
+
+.bar.positive:hover {
+  fill: #b2df8a;
+}
+
+.bar.negative {
+  fill: #e31a1c;
+}
+
+.bar.negative:hover {
+  fill: #fb9a99;
+}
+
+.title {
+  font: bold 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+</style>
+  </head>
+  <body>
+    <h1>Hello</h1>
+
+    <script src="d3.js" type="text/javascript"></script>
+    <script src="wrap.js" type="text/javascript"></script>
+    <script src="waterfallChart.js" type="text/javascript"></script>
+    <script src="meanChart.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+var margin = {top: 80, right: 90, bottom: 80, left: 90},
+    width = 680 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+
+var act = 1600;
+var rawWaterfall = [
+  { name: 'Montant forfaitaire', value: 990 },
+  { name: 'Bonification', value: 160 },
+  { name: '61% des revenus d’activité', value: 0.61*act },
+  { name: 'Forfait logement', value: 70 },
+  { name: 'Revenus d’activité', value: act },
+  { name: 'Revenus hors activité', value: 10 },
+];
+
+var rawMean = [
+  { name: 'Prime d’activité fictive pour Décembre 2018', value: 300 },
+  { name: 'Prime d’activité fictive pour Janvier 2019', value: 100 },
+  { name: 'Prime d’activité fictive pour Février 2019', value: 200 },
+  { name: '', value: 0 },
+  { name: 'Prime d’activité pour Mars 2019', value: 200 },
+];
+
+var step = 1;
+var values = [rawWaterfall, rawMean];
+
+
+var meanC = meanChart(d3.select("body"), {
+  height: height,
+  margin: margin,
+  width: width,
+});
+
+var waterfallC = waterfallChart(d3.select("body"), {
+  height: height,
+  margin: margin,
+  width: width,
+});
+//*
+waterfallC.refresh(rawWaterfall);
+waterfallC.title("Votre prime d'activité fictive de Février 2019");
+meanC.refresh(rawMean);
+meanC.title("Votre prime d'activité de Mars 2019");
+//*/
+
+
+var tests = [{
+  condition: function(d) { return this('ppa', d.M); },
+  if: function(d) {
+    var montant = Math.round(this('ppa', d.M) * 100 ) / 100;
+    return `Selon notre simulateur, vous pouvez bénéficier de la prime d'activité pour un montant de ${montant} € / mois.`;
+  },
+  else: "Selon notre simulateur, vous ne pouvez pas bénéficier de la prime d'activité. Avec les détails de calculs suivants, nous allons essayer de vous expliquer pourquoi."
+}, {
+  condition: function(d) { return ! this('ppa_eligibilite_etudiants', d.M); },
+  if: function(d) {
+    var params = this.p('ppa_eligibilite_etudiants', d.M);
+    var seuil = 169 *
+      params('cotsoc.gen.smic_h_b', d.D) *
+      params('prestations.prestations_familiales.af.seuil_rev_taux', d.D);
+    return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${seuil}. Cela ne semble pas être vôtre cas.`
+  }
+}, {
+  condition: function(d) { return ! this('ppa_eligibilite_etudiants', d.M); },
+  if: function(d) {
+    var params = this.p('ppa_eligibilite_etudiants', d.M);
+    var seuil = 169 *
+      params('cotsoc.gen.smic_h_b', d.D) *
+      params('prestations.prestations_familiales.af.seuil_rev_taux', d.D);
+    return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${seuil}. Cela ne semble pas être vôtre cas.`
+  }
+}];
+
+d3.json('openfisca-trace.json').then(function(data) {
+  var requested = data.requestedCalculations;
+  var ppas = requested.filter(function(name) { return name.startsWith("ppa"); });
+  ppas.sort();
+  var ppaKey = ppas[ppas.length - 1];
+
+  var todo = ppaKey
+  var ppa = data.trace[ppaKey];
+
+  var depths = {};
+  depths[ppaKey] = 0;
+
+  var result = Object.assign({}, ppa);
+  var dates = {
+    M: '2019-04',
+    D: '2019-04-01'
+  }
+
+  var compo = function(name, period) {
+    const key = `${name}<${period}>`;
+    return data.trace[key].value[0];
+  }
+
+  compo.p = function(name, period) {
+    const key = `${name}<${period}>`;
+    const params = data.trace[key].parameters;
+
+    function parameterGetter(name, period) {
+      const pkey = `${name}<${period}>`;
+      return params[pkey]
+    }
+
+    return parameterGetter;
+  }
+
+  tests.forEach((test, i) => {
+    console.log(`Test ${i}`);
+    var res = test.condition.apply(compo, [dates]) ? test.if : test.else
+    if (res) {
+      if (typeof res === 'function') {
+        res = res.apply(compo, [dates]);
+      }
+      console.log(res);
+    }
+  })
+});
+
+    </script>    
+  </body>
+</html>
