@@ -49,6 +49,9 @@ body {
   display: none;
 }
 
+div.block {
+  padding: 1em;
+}
 </style>
   </head>
   <body>
@@ -85,7 +88,7 @@ var rawMean = [
 
 var step = 1;
 var values = [rawWaterfall, rawMean];
-
+/*
 
 var meanC = meanChart(d3.select("body"), {
   height: height,
@@ -98,40 +101,94 @@ var waterfallC = waterfallChart(d3.select("body"), {
   margin: margin,
   width: width,
 });
-//*
+/*
 waterfallC.refresh(rawWaterfall);
 waterfallC.title("Votre prime d'activité fictive de Février 2019");
 meanC.refresh(rawMean);
 meanC.title("Votre prime d'activité de Mars 2019");
 //*/
 
+</script>
 
-var tests = [{
-  condition: function(d) { return this('ppa', d.M); },
-  if: function(d) {
-    var montant = Math.round(this('ppa', d.M) * 100 ) / 100;
-    return `Selon notre simulateur, vous pouvez bénéficier de la prime d'activité pour un montant de ${montant} € / mois.`;
+    <pre>
+    - OK
+      - détails 3 mois
+    - KO
+      - KO test pour étudiant
+        - mois KO
+      - OK test pour étudiant
+        - 0 < moyenne < minimum
+        - détails 3 mois
+    </pre>
+<script type="text/javascript">
+
+var round = function(v) {
+  return Math.round(v * 100 ) / 100
+}
+
+var logic = {
+  name: "OK",
+  condition: function(d) { return this("ppa", d.M); },
+  if: {
+    text: function(d) {
+      var montant = round(this("ppa", d.M));
+      return `Selon notre simulateur, en ${d.labels.M}, vous pouvez bénéficier de la prime d'activité pour un montant de ${montant}&nbsp;€&nbsp;/&nbsp;mois.`;
+    },
+    next: {
+      name: "Détail 3 mois",
+      intro: "La prime d'activité est calculée en faisant la moyenne de 3 valeurs appelées primes d'activité fictives. Il y a une prime d'activité fictive par mois du trimestre de référence.",
+      condition: function(d) {
+        var mois = ['Mm1', 'Mm2', 'Mm3'];
+        var first = this("ppa_fictive", d[mois[0]]);
+        return mois.map(m => this("ppa_fictive", d[m])).reduce((a, v) => a && v == first, true);
+      },
+      if: {
+        text: function(d) {
+          return `Vos primes d'activité fictives valent ${round(this("ppa_fictive", d.Mm1))}&nbsp;€ sur chacun des mois du trimestre de référence.`;
+        }
+      },
+      else: {
+        text: function(d) {
+          return `Vos primes d'activité fictives valent&nbsp;:<br>\
+          - ${round(this("ppa_fictive", d.Mm3))}&nbsp;€ pour ${d.labels.Mm3},<br>\
+          - ${round(this("ppa_fictive", d.Mm2))}&nbsp;€ pour ${d.labels.Mm2} et<br>\
+          - ${round(this("ppa_fictive", d.Mm1))}&nbsp;€ pour ${d.labels.Mm1}.`;
+        }
+      }
+    }
   },
-  else: "Selon notre simulateur, vous ne pouvez pas bénéficier de la prime d'activité. Avec les détails de calculs suivants, nous allons essayer de vous expliquer pourquoi."
-}, {
-  condition: function(d) { return ! this('ppa_eligibilite_etudiants', d.M); },
-  if: function(d) {
-    var params = this.p('ppa_eligibilite_etudiants', d.M);
-    var seuil = 169 *
-      params('cotsoc.gen.smic_h_b', d.D) *
-      params('prestations.prestations_familiales.af.seuil_rev_taux', d.D);
-    return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${seuil}. Cela ne semble pas être vôtre cas.`
+  else: {
+    text: "Selon notre simulateur, vous ne pouvez pas bénéficier de la prime d'activité.",
+    next: {
+      name: "KO",
+      condition: function(d) { return ! this("ppa_eligibilite_etudiants", d.M); },
+      if: {
+        text: function(d) {
+          var params = this.p("ppa_eligibilite_etudiants", d.M);
+          var seuil = 169 *
+            params("cotsoc.gen.smic_h_b", d.D) *
+            params("prestations.prestations_familiales.af.seuil_rev_taux", d.D);
+          var roundedSeuil = round(seuil);
+          return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${roundedSeuil}&nbsp;€.`
+        },
+        //next: {}
+      },
+    },
+  },
+};
+
+;
+var tests = [];
+function rec(obj) {
+  tests.push(obj);
+  if (obj.if && obj.if.next) {
+    rec(obj.if.next);
   }
-}, {
-  condition: function(d) { return ! this('ppa_eligibilite_etudiants', d.M); },
-  if: function(d) {
-    var params = this.p('ppa_eligibilite_etudiants', d.M);
-    var seuil = 169 *
-      params('cotsoc.gen.smic_h_b', d.D) *
-      params('prestations.prestations_familiales.af.seuil_rev_taux', d.D);
-    return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${seuil}. Cela ne semble pas être vôtre cas.`
+  if (obj.else && obj.else.next) {
+    rec(obj.else.next);
   }
-}];
+}
+rec(logic);
 
 d3.json('openfisca-trace.json').then(function(data) {
   var requested = data.requestedCalculations;
@@ -148,8 +205,19 @@ d3.json('openfisca-trace.json').then(function(data) {
   var result = Object.assign({}, ppa);
   var dates = {
     M: '2019-04',
-    D: '2019-04-01'
+    Mm1: '2019-03',
+    Mm2: '2019-02',
+    Mm3: '2019-01',
+    D: '2019-04-01',
+    labels: {
+      M: 'avril 2019',
+      Mm1: 'mars 2019',
+      Mm2: 'février 2019',
+      Mm3: 'janvier 2019',
+    }
   }
+
+  var root = document.body;
 
   var compo = function(name, period) {
     const key = `${name}<${period}>`;
@@ -168,16 +236,43 @@ d3.json('openfisca-trace.json').then(function(data) {
     return parameterGetter;
   }
 
-  tests.forEach((test, i) => {
-    console.log(`Test ${i}`);
-    var res = test.condition.apply(compo, [dates]) ? test.if : test.else
-    if (res) {
-      if (typeof res === 'function') {
-        res = res.apply(compo, [dates]);
-      }
-      console.log(res);
+  var evl = function (block) {
+    if (typeof block === 'function') {
+      return block.apply(compo, [dates]);
     }
-  })
+    return block;
+  };
+
+  var appendText = function(element, text) {
+    var t = document.createElement('div');
+    t.innerHTML = text;
+
+    element.appendChild(t);
+  }
+
+  var compute = function (parent, block) {
+    var node = document.createElement('div');
+    node.classList.add('block');
+
+    parent.appendChild(node);
+    appendText(node, 'En savoir plus:');
+    appendText(node, 'name: ' + block.name);
+    if (block.intro) {
+      appendText(node, 'intro: ' + block.intro);
+    }
+    var condition = evl(block.condition);
+    appendText(node, 'condition: ' + condition);
+    appendText(node, 'text if: ' + evl(block.if && block.if.text));
+    if (block.if && block.if.next) {
+      compute(node, block.if.next);
+    }
+    appendText(node, 'text else: ' + evl(block.else && block.else.text));
+    if (block.else && block.else.next) {
+      compute(node, block.else.next);
+    }
+  }
+
+  compute(root, logic);
 });
 
     </script>    
