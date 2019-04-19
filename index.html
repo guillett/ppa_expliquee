@@ -161,6 +161,7 @@ var logic = {
     text: "Selon notre simulateur, vous ne pouvez pas bénéficier de la prime d'activité.",
     next: {
       name: "KO",
+      intro: "La prime d'activité est calculée en faisant la moyenne de 3 valeurs appelées primes d'activité fictives. Il y a une prime d'activité fictive par mois du trimestre de référence.",
       condition: function(d) { return ! this("ppa_eligibilite_etudiants", d.M); },
       if: {
         text: function(d) {
@@ -169,7 +170,14 @@ var logic = {
             params("cotsoc.gen.smic_h_b", d.D) *
             params("prestations.prestations_familiales.af.seuil_rev_taux", d.D);
           var roundedSeuil = round(seuil);
-          return `En tant qu'étudiant.e, pour être éligible à la prime d'activité, vos ressources d'activité de chaque mois du trimestre de référence doivent être supérieure à ${roundedSeuil}&nbsp;€.`
+
+          var mois = ['Mm1', 'Mm2', 'Mm3'];
+          var moisSousSeuil = mois.filter(m => this('ppa_revenu_activite_individu', d[m])<seuil);
+
+          return `En tant qu'étudiant.e, pour être éligible à la prime d'activité,\
+          il faut aussi que pour chaque mois vos ressources d'activité soient supérieures à ${roundedSeuil}&nbsp;€ or\
+          pour le${moisSousSeuil.length>1 ? 's' : ''} mois de ${moisSousSeuil.map(m=> d.labels[m]).join(' et ')},\
+          vos ressources n'ont été que de ${moisSousSeuil.map(m => round(this('ppa_revenu_activite_individu', d[m])) + '&nbsp;€').join(' et ')} respectivement.`
         },
         //next: {}
       },
