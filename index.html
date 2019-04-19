@@ -160,7 +160,7 @@ var logic = {
   else: {
     text: "Selon notre simulateur, vous ne pouvez pas bénéficier de la prime d'activité.",
     next: {
-      name: "KO",
+      name: "KO étudiant",
       intro: "La prime d'activité est calculée en faisant la moyenne de 3 valeurs appelées primes d'activité fictives. Il y a une prime d'activité fictive par mois du trimestre de référence.",
       condition: function(d) { return ! this("ppa_eligibilite_etudiants", d.M); },
       if: {
@@ -180,6 +180,31 @@ var logic = {
           vos ressources n'ont été que de ${moisSousSeuil.map(m => round(this('ppa_revenu_activite_individu', d[m])) + '&nbsp;€').join(' et ')} respectivement.`
         },
         //next: {}
+      },
+      else: {
+        text: '',
+        next: {
+          name: 'KO seuil',
+          condition: function(d) {
+            var mois = ['Mm1', 'Mm2', 'Mm3'];
+            var moyenne = mois.reduce((a, m) => a + this('ppa_fictive', d[m]), 0) / 3.0;
+
+            var params = this.p("ppa", d.M);
+            var minimum = params('prestations.minima_sociaux.ppa.seuil_non_versement', d.D);
+            return moyenne < minimum;
+          },
+          if: {
+            text: function(d) {
+            var mois = ['Mm1', 'Mm2', 'Mm3'];
+            var moyenne = mois.reduce((a, m) => a + this('ppa_fictive', d[m]), 0) / 3.0;
+
+            var params = this.p("ppa", d.M);
+            var minimum = params('prestations.minima_sociaux.ppa.seuil_non_versement', d.D);
+              return `La prime d'activité n'est pas versée lorsque la moyenne des primes d'activité fictives est en dessous de ${round(minimum)}&nbsp;€\
+              or dans votre cas elle vaut ${round(moyenne)}&nbsp;€.`;
+            }
+          },
+        },
       },
     },
   },
@@ -239,6 +264,10 @@ d3.json('openfisca-trace.json').then(function(data) {
     function parameterGetter(name, period) {
       const pkey = `${name}<${period}>`;
       return params[pkey]
+    }
+
+    parameterGetter.dump = function() {
+      return params;
     }
 
     return parameterGetter;
