@@ -58,19 +58,33 @@ div.block {
     <h1>PPA fictive expliquée</h1>
 
     <script src="d3.js" type="text/javascript"></script>
+    <script src="common.js" type="text/javascript"></script>
     <script type="text/javascript">
 
-
-var act = 1600;
-var rawWaterfall = [
-  { name: 'Montant forfaitaire', value: 990 },
-  { name: 'Bonification', value: 160 },
-  { name: '61% des revenus d’activité', value: 0.61*act },
-  { name: 'Forfait logement', value: 70 },
-  { name: 'Revenus d’activité', value: act },
-  { name: 'Revenus hors activité', value: 10 },
+var labels =  [
+{ f: function(d) { return `La prime d'activité fictive du mois de ${ 2+2} a été évaluée à 125 € / mois.`; } },
+{ f: function(d) { return 'Ce montant est obtenu à partir de la somme des éléments suivants :'; } },
+{ f: function(d) { return '- un montant forfaitaire de XXX € / mois ;'; } },
+{ f: function(d) { return '- une bonification de XX € / mois et'; } },
+{ f: function(d) { return '- 61% de vos revenus d\'activité c\'est à dire XXX / € mois.'; } },
+{ f: function(d) { return 'À cette somme sont déduits les éléments suivants :'; } },
+{ f: function(d) { return '- un forfait logement de XX € / mois et'; } },
+{ f: function(d) { return '- l\'intégralité de vos ressources ie. XX € / mois.'; } },
+{ f: function(d) { return 'On obtient xxx € / mois comme prime d\'activité fictive pour le mois de Janvier 2019.'; } },
+{ f: function(d) { return 'En cas de valeur négative on prend 0.'; }, },
 ];
 
+d3.json('openfisca-trace.json').then(function(data) {
+  var requested = data.requestedCalculations;
+  var ppas = requested.filter(function(name) { return name.startsWith("ppa"); });
+  ppas.sort();
+  var ppaKey = ppas[ppas.length - 1];
+
+  console.log(data.trace['ppa_fictive<2019-03>'])
+
+  labels.forEach(function(label) {
+  });
+});
 
 </script>
   </body>

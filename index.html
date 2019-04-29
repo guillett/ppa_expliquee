@@ -11,6 +11,7 @@ div.block {
   <body>
     <h1>PPA expliquée</h1>
     <script src="d3.js" type="text/javascript"></script>
+    <script src="common.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 
@@ -128,49 +129,10 @@ d3.json('openfisca-trace.json').then(function(data) {
   depths[ppaKey] = 0;
 
   var result = Object.assign({}, ppa);
-  var dates = {
-    M: '2019-04',
-    Mm1: '2019-03',
-    Mm2: '2019-02',
-    Mm3: '2019-01',
-    D: '2019-04-01',
-    labels: {
-      M: 'avril 2019',
-      Mm1: 'mars 2019',
-      Mm2: 'février 2019',
-      Mm3: 'janvier 2019',
-    }
-  }
-
   var root = document.body;
 
-  var compo = function(name, period) {
-    const key = `${name}<${period}>`;
-    return data.trace[key].value[0];
-  }
+  var compo = compoConstructor(data);
 
-  compo.p = function(name, period) {
-    const key = `${name}<${period}>`;
-    const params = data.trace[key].parameters;
-
-    function parameterGetter(name, period) {
-      const pkey = `${name}<${period}>`;
-      return params[pkey]
-    }
-
-    parameterGetter.dump = function() {
-      return params;
-    }
-
-    return parameterGetter;
-  }
-
-  var evl = function (block) {
-    if (typeof block === 'function') {
-      return block.apply(compo, [dates]);
-    }
-    return block;
-  };
 
   var appendText = function(element, text) {
     var t = document.createElement('div');
@@ -189,13 +151,13 @@ d3.json('openfisca-trace.json').then(function(data) {
     if (block.intro) {
       appendText(node, 'intro: ' + block.intro);
     }
-    var condition = evl(block.condition);
+    var condition = compo.evl(block.condition);
     appendText(node, 'condition: ' + condition);
-    appendText(node, 'text if: ' + evl(block.if && block.if.text));
+    appendText(node, 'text if: ' + compo.evl(block.if && block.if.text));
     if (block.if && block.if.next) {
       compute(node, block.if.next);
     }
-    appendText(node, 'text else: ' + evl(block.else && block.else.text));
+    appendText(node, 'text else: ' + compo.evl(block.else && block.else.text));
     if (block.else && block.else.next) {
       compute(node, block.else.next);
     }
