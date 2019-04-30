@@ -14,9 +14,9 @@
   },
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/guillett/openfisca-tracer"
+    "url": "https://github.com/guillett/ppa_expliquee"
   },
-  "homepage": "https://github.com/guillett/openfisca-tracer#readme",
+  "homepage": "https://github.com/guillett/ppa_expliquee#readme",
   "dependencies": {
     "@zeit/next-css": "^1.0.1",
     "isomorphic-unfetch": "^2.0.0",
