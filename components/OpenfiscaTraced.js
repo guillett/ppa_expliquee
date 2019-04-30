@@ -11,6 +11,11 @@ export default class OpenfiscaTraced extends React.Component {
     return this.props.data.trace[key].value.reduce((a, e) => a + e, 0)
   }
 
+  d(name, period) {
+    const key = `${name}<${period}>`
+    return this.props.data.trace[key]
+  }
+
   vr(name, period) {
     return this.r(this.v(name, period));
   }
