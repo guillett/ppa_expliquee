@@ -13,7 +13,7 @@ const Layout = (props) => (
         color: black;
       }
     `}</style>
-    <h1>La prime d'activité expliquée en détails</h1>
+    <h1>La prime d'activité en détails</h1>
     <div>
       { (props.back !== false) && <a class="back" onClick={() => Router.back()}>Précédent</a> }
     </div>

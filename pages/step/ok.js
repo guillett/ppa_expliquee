@@ -17,7 +17,10 @@ export default class Page extends OpenfiscaTraced(OpenfiscaPage) {
         <p>La prime d'activité est calculée en faisant la moyenne de 3 valeurs appelées primes d'activité fictives.</p>
         {
           allSame ? (
-            <p>Vos primes d'activité fictives valent {this.vr("ppa_fictive", this.props.dates.Mm1)}&nbsp;€ sur chacun des mois du trimestre de référence.</p>
+            <div>
+              <p>Vos primes d'activité fictives valent <Link href="/step/ppamm3"><a>{this.vr("ppa_fictive", this.props.dates.Mm1)}&nbsp;€</a></Link> sur chacun des mois du trimestre de référence.</p>
+              <p>Vous pouvez cliquer sur le montant pour en avoir le détail.</p>
+            </div>
            ) : (
             <div>
               <p>Vos primes d'activité fictives valent&nbsp;:</p>
