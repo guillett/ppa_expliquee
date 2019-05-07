@@ -1,7 +1,6 @@
-import React from 'react';
-import fetch from 'isomorphic-unfetch'
+import OpenfiscaTraced from '../../components/OpenfiscaTraced'
 
-export default Base => class extends Base {
+export default class OpenfiscaTracedComponent extends OpenfiscaTraced(React.Component) {
   constructor(props) {
     super(props)
   }

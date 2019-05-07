@@ -11,6 +11,10 @@ export default class ExplainedKOPPA extends OpenfiscaTraced {
           <ExplainedKOStudentPPA data={this.props.data} dates={this.props.dates} /> :
           <ExplainedKOMinPPA data={this.props.data} dates={this.props.dates} />
         }
+        <div>
+          <ExplainedKOStudentPPA data={this.props.data} dates={this.props.dates} />
+          <ExplainedKOMinPPA data={this.props.data} dates={this.props.dates} />
+        </div>
       </div>
     )
   }
@@ -29,9 +33,9 @@ class ExplainedKOStudentPPA extends OpenfiscaTraced {
     const moisSousSeuil = mois.filter(m => this.vr('ppa_revenu_activite_individu', d[m])<seuil)
     return (
       <p>En tant qu'étudiant.e, pour être éligible à la prime d'activité
-      il faut que sur les trois derniers mois vos ressources d'activité mensuelles soient supérieures à {roundedSeuil}&nbsp;€
+      il faut que sur les trois derniers mois vos revenus d'activité mensuels soient supérieures à {roundedSeuil}&nbsp;€
       or pour le{moisSousSeuil.length>1 ? 's' : ''} mois de {moisSousSeuil.map(m=> d.labels[m]).join(' et ')},
-      vos ressources n'ont été que de {moisSousSeuil.map(m => this.vr('ppa_revenu_activite_individu', d[m]) + ' €').join(' et ')}{moisSousSeuil.length>1 ? ' respectivement' : ''}.</p>
+      ils n'ont été que de {moisSousSeuil.map(m => this.vr('ppa_revenu_activite_individu', d[m]) + ' €').join(' et ')}{moisSousSeuil.length>1 ? ' respectivement' : ''}.</p>
     )
   }
 }
